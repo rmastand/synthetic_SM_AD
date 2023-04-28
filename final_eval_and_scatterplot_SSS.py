@@ -55,7 +55,7 @@ seed = 1
 n_features = 5
 
 
-index_start = 0
+index_start = 1
 index_stop = 5
 
 eval_feta = True
@@ -65,7 +65,7 @@ eval_salad = True
 eval_combined = True
 
 
-results_dir = f"/global/ml4hep/spss/rrmastandrea/NF_results_SSS/nsig_inj{args.num_signal_to_inject}_seed{seed}"
+results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_SSS/nsig_inj{args.num_signal_to_inject}_seed{seed}"
 
 os.makedirs(results_dir, exist_ok=True)
 
