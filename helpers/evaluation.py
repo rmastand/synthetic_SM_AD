@@ -56,7 +56,39 @@ class NeuralNet(nn.Module):
         
         return output
     
+"""
 
+# Architecture from CATHODE paper
 
+class NeuralNet(nn.Module):
+    def __init__(self, input_shape):
+        super(NeuralNet, self).__init__()
 
+        # Designed to ensure that adjacent pixels are either all 0s or all active
+        # with an input probability
+        #self.dropout1 = nn.Dropout2d(0.1)
+        #self.dropout2 = nn.Dropout2d(0.1)
+
+        # First fully connected layer
+        self.fc1 = nn.Linear(input_shape, 64) # first size is output of flatten
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, 64)
+        self.fc4 = nn.Linear(64, 1)
+
+        
+    # x represents our data
+    def forward(self, x):
+
+        x = torch.flatten(x, 1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = self.fc4(x)
+    
+        output = torch.sigmoid(x) # for BCE 
+        
+        return output
+    
+
+"""
     

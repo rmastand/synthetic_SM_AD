@@ -1,9 +1,11 @@
 import numpy as np
 from helpers.evaluation import *
 
-from sklearn.utils import class_weight
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import KFold
+from sklearn.utils import class_weight, shuffle
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.model_selection import train_test_split, KFold
+
+from sklearn.metrics import roc_auc_score, roc_curve
 
 
 def get_sic_rejection(idd, seed, n, results_dir, num_bkg_events = -1):
@@ -118,7 +120,7 @@ def discriminate_datasets_weighted(dir_to_save, idd,
     class_weights = class_weight.compute_class_weight('balanced', np.unique(nn_train_labs.reshape(-1)), nn_train_labs.reshape(-1))
     class_weights = dict(enumerate(class_weights))
     print(class_weights)
-    
+
     # train-test split
     val_size = 0.2
     
@@ -140,7 +142,13 @@ def discriminate_datasets_weighted(dir_to_save, idd,
     print("Train data, labels shape:", X_train.shape, y_train.shape)
     print("Val data, labels shape:", X_val.shape, y_val.shape)
     print("Test data, labels  shape:", X_test.shape, y_test.shape)
-   
+    
+    # preprocess the data
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_val = scaler.transform(X_val)
+    X_test = scaler.transform(X_test)
+    
     # send to device
     X_train = np_to_torch(X_train, device)
     X_val = np_to_torch(X_val, device)
@@ -245,8 +253,6 @@ def discriminate_datasets_weighted(dir_to_save, idd,
         fig.savefig(fname)
 
     # evaluate
-               
-    
     # load in the model with the best val loss
     
     print(f"Loading in best model for {model_path}, val loss {val_loss_to_beat} from epoch {best_epoch}")
@@ -303,12 +309,19 @@ def discriminate_for_scatter_kfold(results_dir, idd, train_samp_1, train_samp_2,
     
     print("Train data, labels shape:", X_train.shape, y_train.shape)
     print("Test data, labels  shape:", X_test.shape, y_test.shape)
+    
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
 
     # send to device
     X_train = np_to_torch(X_train, device)
     X_test = np_to_torch(X_test, device)
     y_train = np_to_torch(y_train, device)
     w_train = np_to_torch(w_train, device)
+    
+    
+    
     
     # Define the K-fold Cross Validator
     kfold = KFold(n_splits=k_folds, shuffle=True)
@@ -420,7 +433,6 @@ def discriminate_for_scatter_kfold(results_dir, idd, train_samp_1, train_samp_2,
             ax.set_xlabel("Epoch")
             ax.set_ylabel("Loss")
             ax.set_title(f"{idd}_fold{fold}")
-            fig.show()
         """
 
         # evaluate
