@@ -55,21 +55,22 @@ seed = 1
 n_features = 5
 
 
-index_start = 1
-index_stop = 5
+index_start = 0
+index_stop = 1
 
 eval_feta = True
 eval_cathode = True
 eval_curtains = True
 eval_salad = True
-eval_combined = True
+eval_combined = False
+eval_full_sup = True
 
 
-results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_SSS/nsig_inj{args.num_signal_to_inject}_seed{seed}"
+results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_wide/nsig_inj{args.num_signal_to_inject}_seed{seed}"
 
 os.makedirs(results_dir, exist_ok=True)
 
-scaled_data_dir = "/global/home/users/rrmastandrea/scaled_data/"
+scaled_data_dir = "/global/home/users/rrmastandrea/scaled_data_wide/"
 
 # parameters for combined samples
 target_total_events = 1000000
@@ -79,21 +80,7 @@ target_total_events = 1000000
 epochs_NN =  100
 batch_size_NN = 128 
 lr_NN = 0.001
-patience_NN = 10 
-
-
-context_endpoints = (2500, 4500)
-
-
-bands_dict = {"ob1": [2500, 2900],
-              "sb1": [2900, 3300],
-              "sr" : [3300, 3700],
-              "sb2": [3700, 4100],
-              "ob2": [4100, 4500]}
-
-binning_scheme = np.linspace(-3.5, 3.5, 50)
-
-
+patience_NN = 5 
 
 
 
@@ -105,10 +92,7 @@ STS DATA
 """
 """
 
-
-STS_bkg_small_dataset = np.load(f"{scaled_data_dir}/STS_bkg.npy")
-STS_bkg_extra_dataset = np.load(f"{scaled_data_dir}/STS_bkg_extra.npy") # David's extra samples
-STS_bkg_dataset = np.vstack((STS_bkg_small_dataset, STS_bkg_extra_dataset))
+STS_bkg_dataset = np.load(f"{scaled_data_dir}/STS_bkg_extra.npy") # David's extra samples
 STS_sig_dataset = np.load(f"{scaled_data_dir}/STS_sig.npy")
 
 dat_samples_train = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/data.npy")
@@ -130,17 +114,16 @@ curtains_samples = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to
 salad_samples = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/salad.npy")
 base_salad_weights = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/salad_weights.npy").reshape(-1, 1)
 
-num_synth_events = feta_samples.shape[0] + cathode_samples.shape[0] + curtains_samples.shape[0] + salad_samples.shape[0] 
+#num_synth_events = feta_samples.shape[0] + cathode_samples.shape[0] + curtains_samples.shape[0] + salad_samples.shape[0] 
 
 blank_weights_data = np.ones((dat_samples_train.shape[0], 1))
 
 
 for seed_NN in range(index_start, index_stop, 1):
-    
-    np.random.seed(seed_NN)
 
 
     if eval_feta:
+        np.random.seed(seed_NN)
         print(f"Evaluating feta with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
         
         roc, feta_results = discriminate_for_scatter_kfold(results_dir, f"feta_{seed_NN}", feta_samples[:,:n_features], dat_samples_train[:,:n_features], np.ones((feta_samples.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
@@ -157,6 +140,7 @@ for seed_NN in range(index_start, index_stop, 1):
         print()
 
     if eval_cathode:
+        np.random.seed(seed_NN)
         
         print(f"Evaluating cathode with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
         
@@ -175,6 +159,7 @@ for seed_NN in range(index_start, index_stop, 1):
 
 
     if eval_curtains:
+        np.random.seed(seed_NN)
 
         print(f"Evaluating curtains with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
         roc, curtains_results = discriminate_for_scatter_kfold(results_dir, f"curtains_{seed_NN}", curtains_samples[:,:n_features], dat_samples_train[:,:n_features], np.ones((curtains_samples.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
@@ -193,6 +178,7 @@ for seed_NN in range(index_start, index_stop, 1):
         
 
     if eval_salad:
+        np.random.seed(seed_NN)
 
         print(f"Evaluating salad with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
         roc, salad_results = discriminate_for_scatter_kfold(results_dir, f"salad_{seed_NN}", salad_samples[:,:n_features], dat_samples_train[:,:n_features], base_salad_weights, blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
@@ -212,6 +198,7 @@ for seed_NN in range(index_start, index_stop, 1):
         
 
     if eval_combined:
+        np.random.seed(seed_NN)
 
         print(f"Evaluating combined samples with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
         
@@ -250,27 +237,45 @@ SUPERVISED CLASSIFIER
 "
 """
 
-if int(args.num_signal_to_inject) == 0:
+def minmaxscale(data, col_minmax, lower = -3.0, upper = 3.0, forward = True):
+    if forward:    
+        minmaxscaled_data = np.zeros(data.shape)
+        for col in range(data.shape[1]):
+            X_std = (data[:, col] - col_minmax[col][0]) / (col_minmax[col][1] - col_minmax[col][0])
+            minmaxscaled_data[:, col] = X_std * (upper - lower) + lower      
+        return minmaxscaled_data
+
+    else:  
+        reversescaled_data = np.zeros(data.shape)
+        for col in range(data.shape[1]):
+            X_std = (data[:, col] - lower) / (upper - lower)
+            reversescaled_data[:, col] = X_std * (col_minmax[col][1] - col_minmax[col][0]) + col_minmax[col][0]
+        return reversescaled_data
+
+
+if eval_full_sup:
     
     
     # load in the non STS labeled samples
     # load in the reverse rescales
-    path_to_minmax = "/global/home/users/rrmastandrea/FETA/LHCO_STS/data/col_minmax.npy"
+    path_to_minmax = "/global/home/users/rrmastandrea/FETA/LHCO_STS_wide/data/col_minmax.npy"
     col_minmax = np.load(path_to_minmax)
-    true_samples_dir = f"/global/home/users/rrmastandrea/FETA/LHCO_STS/data/"
+    true_samples_dir = f"/global/home/users/rrmastandrea/FETA/LHCO_STS_wide/data/"
 
     true_sup_bkg = np.load(os.path.join(true_samples_dir, f"true_sup_bkg.npy"))
     true_sup_sig = np.load(os.path.join(true_samples_dir, f"true_sup_sig.npy"))
     true_sup_bkg = minmaxscale(true_sup_bkg, col_minmax, lower = 0, upper = 1, forward = True)
     true_sup_sig = minmaxscale(true_sup_sig, col_minmax, lower = 0, upper = 1, forward = True)
-
-
+    
+    
+    
     for seed_NN in range(index_start, index_stop, 1):
+        np.random.seed(seed_NN)
     
         print(f"Evaluating full sup (seed {seed_NN} of {index_stop})...")
 
 
-        roc, full_sup_results = discriminate_for_scatter_kfold(results_dir, f"full_sup_{seed_NN}",true_sup_bkg[:,:n_features], true_sup_sig[:,:n_features], np.ones((true_sup_bkg.shape[0], 1)), np.ones((true_sup_sig.shape[0], 1)), STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
+        roc, full_sup_results = discriminate_datasets_weighted(results_dir, f"full_sup_{seed_NN}",true_sup_bkg[:,:n_features], true_sup_sig[:,:n_features], np.ones((true_sup_bkg.shape[0], 1)), np.ones((true_sup_sig.shape[0], 1)), STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
         results_file = f"{results_dir}/full_sup_{seed_NN}.txt"
 
         with open(results_file, "w") as results:

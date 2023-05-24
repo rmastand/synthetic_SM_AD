@@ -320,9 +320,6 @@ def discriminate_for_scatter_kfold(results_dir, idd, train_samp_1, train_samp_2,
     y_train = np_to_torch(y_train, device)
     w_train = np_to_torch(w_train, device)
     
-    
-    
-    
     # Define the K-fold Cross Validator
     kfold = KFold(n_splits=k_folds, shuffle=True)
     fold_best_val_losses = []
