@@ -56,13 +56,13 @@ n_features = 5
 
 
 index_start = 0
-index_stop = 1
+index_stop = 5
 
 eval_feta = True
 eval_cathode = True
 eval_curtains = True
 eval_salad = True
-eval_combined = False
+eval_combined = True
 eval_full_sup = True
 
 
@@ -81,6 +81,23 @@ epochs_NN =  100
 batch_size_NN = 128 
 lr_NN = 0.001
 patience_NN = 5 
+
+
+def minmaxscale(data, col_minmax, lower = -3.0, upper = 3.0, forward = True):
+    if forward:    
+        minmaxscaled_data = np.zeros(data.shape)
+        for col in range(data.shape[1]):
+            X_std = (data[:, col] - col_minmax[col][0]) / (col_minmax[col][1] - col_minmax[col][0])
+            minmaxscaled_data[:, col] = X_std * (upper - lower) + lower      
+        return minmaxscaled_data
+
+    else:  
+        reversescaled_data = np.zeros(data.shape)
+        for col in range(data.shape[1]):
+            X_std = (data[:, col] - lower) / (upper - lower)
+            reversescaled_data[:, col] = X_std * (col_minmax[col][1] - col_minmax[col][0]) + col_minmax[col][0]
+        return reversescaled_data
+
 
 
 
@@ -114,9 +131,20 @@ curtains_samples = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to
 salad_samples = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/salad.npy")
 base_salad_weights = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/salad_weights.npy").reshape(-1, 1)
 
-#num_synth_events = feta_samples.shape[0] + cathode_samples.shape[0] + curtains_samples.shape[0] + salad_samples.shape[0] 
+num_synth_events = feta_samples.shape[0] + cathode_samples.shape[0] + curtains_samples.shape[0] + salad_samples.shape[0] 
 
 blank_weights_data = np.ones((dat_samples_train.shape[0], 1))
+
+
+# for full sup
+path_to_minmax = "/global/home/users/rrmastandrea/FETA/LHCO_STS_wide/data/col_minmax.npy"
+col_minmax = np.load(path_to_minmax)
+true_samples_dir = f"/global/home/users/rrmastandrea/FETA/LHCO_STS_wide/data/"
+
+true_sup_bkg = np.load(os.path.join(true_samples_dir, f"true_sup_bkg.npy"))
+true_sup_sig = np.load(os.path.join(true_samples_dir, f"true_sup_sig.npy"))
+true_sup_bkg = minmaxscale(true_sup_bkg, col_minmax, lower = 0, upper = 1, forward = True)
+true_sup_sig = minmaxscale(true_sup_sig, col_minmax, lower = 0, upper = 1, forward = True)
 
 
 for seed_NN in range(index_start, index_stop, 1):
@@ -229,49 +257,10 @@ for seed_NN in range(index_start, index_stop, 1):
         print()
 
 
+    if eval_full_sup:
 
-"""
-"
-"
-SUPERVISED CLASSIFIER
-"
-"""
-
-def minmaxscale(data, col_minmax, lower = -3.0, upper = 3.0, forward = True):
-    if forward:    
-        minmaxscaled_data = np.zeros(data.shape)
-        for col in range(data.shape[1]):
-            X_std = (data[:, col] - col_minmax[col][0]) / (col_minmax[col][1] - col_minmax[col][0])
-            minmaxscaled_data[:, col] = X_std * (upper - lower) + lower      
-        return minmaxscaled_data
-
-    else:  
-        reversescaled_data = np.zeros(data.shape)
-        for col in range(data.shape[1]):
-            X_std = (data[:, col] - lower) / (upper - lower)
-            reversescaled_data[:, col] = X_std * (col_minmax[col][1] - col_minmax[col][0]) + col_minmax[col][0]
-        return reversescaled_data
-
-
-if eval_full_sup:
-    
-    
-    # load in the non STS labeled samples
-    # load in the reverse rescales
-    path_to_minmax = "/global/home/users/rrmastandrea/FETA/LHCO_STS_wide/data/col_minmax.npy"
-    col_minmax = np.load(path_to_minmax)
-    true_samples_dir = f"/global/home/users/rrmastandrea/FETA/LHCO_STS_wide/data/"
-
-    true_sup_bkg = np.load(os.path.join(true_samples_dir, f"true_sup_bkg.npy"))
-    true_sup_sig = np.load(os.path.join(true_samples_dir, f"true_sup_sig.npy"))
-    true_sup_bkg = minmaxscale(true_sup_bkg, col_minmax, lower = 0, upper = 1, forward = True)
-    true_sup_sig = minmaxscale(true_sup_sig, col_minmax, lower = 0, upper = 1, forward = True)
-    
-    
-    
-    for seed_NN in range(index_start, index_stop, 1):
         np.random.seed(seed_NN)
-    
+
         print(f"Evaluating full sup (seed {seed_NN} of {index_stop})...")
 
 
@@ -281,18 +270,16 @@ if eval_full_sup:
         with open(results_file, "w") as results:
             results.write(f"Discrim. power for STS bkg from STS sig in band SR: {roc}\n")
             results.write(3*"\n")
-            
+
         np.save(f"{results_dir}/full_sup_results_seedNN{seed_NN}", full_sup_results)
 
         print()
         print(20*"*")
         print()
-        
-        
-        
+
 
 print("Done!")
-          
+
 
 
 
