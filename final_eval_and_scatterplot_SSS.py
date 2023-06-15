@@ -9,7 +9,8 @@ import os
 from numba import cuda 
 import argparse
 
-from helpers.synthesis_plots import *
+from helpers.training import *
+from helpers.synthesis import *
 
 # Initialize parser
 parser = argparse.ArgumentParser()
@@ -56,14 +57,14 @@ n_features = 5
 
 
 index_start = 0
-index_stop = 5
+index_stop = 20
 
 eval_feta = True
 eval_cathode = True
 eval_curtains = True
 eval_salad = True
 eval_combined = True
-eval_full_sup = True
+eval_full_sup = False
 
 
 results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_wide/nsig_inj{args.num_signal_to_inject}_seed{seed}"
@@ -154,7 +155,7 @@ for seed_NN in range(index_start, index_stop, 1):
         np.random.seed(seed_NN)
         print(f"Evaluating feta with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
         
-        roc, feta_results = discriminate_for_scatter_kfold(results_dir, f"feta_{seed_NN}", feta_samples[:,:n_features], dat_samples_train[:,:n_features], np.ones((feta_samples.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
+        roc, feta_results = discriminate_for_scatter_kfold(results_dir, f"feta_{seed_NN}", feta_samples[:,:n_features], dat_samples_train[:,:n_features], np.ones((feta_samples.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = False, seed = seed_NN)
         
         results_file = f"{results_dir}/feta_{seed_NN}.txt"
 
@@ -172,7 +173,7 @@ for seed_NN in range(index_start, index_stop, 1):
         
         print(f"Evaluating cathode with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
         
-        roc, cathode_results = discriminate_for_scatter_kfold(results_dir, f"cathode_{seed_NN}", cathode_samples[:,:n_features], dat_samples_train[:,:n_features], np.ones((cathode_samples.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
+        roc, cathode_results = discriminate_for_scatter_kfold(results_dir, f"cathode_{seed_NN}", cathode_samples[:,:n_features], dat_samples_train[:,:n_features], np.ones((cathode_samples.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = False, seed = seed_NN)
         
         results_file = f"{results_dir}/cathode_{seed_NN}.txt"
 
@@ -190,7 +191,7 @@ for seed_NN in range(index_start, index_stop, 1):
         np.random.seed(seed_NN)
 
         print(f"Evaluating curtains with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
-        roc, curtains_results = discriminate_for_scatter_kfold(results_dir, f"curtains_{seed_NN}", curtains_samples[:,:n_features], dat_samples_train[:,:n_features], np.ones((curtains_samples.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
+        roc, curtains_results = discriminate_for_scatter_kfold(results_dir, f"curtains_{seed_NN}", curtains_samples[:,:n_features], dat_samples_train[:,:n_features], np.ones((curtains_samples.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = False, seed = seed_NN)
         
         results_file = f"{results_dir}/curtains_{seed_NN}.txt"
 
@@ -209,7 +210,7 @@ for seed_NN in range(index_start, index_stop, 1):
         np.random.seed(seed_NN)
 
         print(f"Evaluating salad with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
-        roc, salad_results = discriminate_for_scatter_kfold(results_dir, f"salad_{seed_NN}", salad_samples[:,:n_features], dat_samples_train[:,:n_features], base_salad_weights, blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
+        roc, salad_results = discriminate_for_scatter_kfold(results_dir, f"salad_{seed_NN}", salad_samples[:,:n_features], dat_samples_train[:,:n_features], base_salad_weights, blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = False, seed = seed_NN)
         
         
         results_file = f"{results_dir}/salad_{seed_NN}.txt"
@@ -244,14 +245,15 @@ for seed_NN in range(index_start, index_stop, 1):
         print(f"Using {synth_samples.shape[0]} events.")
 
 
-        roc, _ = discriminate_for_scatter_kfold(results_dir, f"combined_{seed_NN}", synth_samples[:,:n_features], dat_samples_train[:,:n_features], synth_weights, blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
+        roc, combined_results = discriminate_for_scatter_kfold(results_dir, f"combined_{seed_NN}", synth_samples[:,:n_features], dat_samples_train[:,:n_features], synth_weights, blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = False, seed = seed_NN)
 
         results_file = f"{results_dir}/combined_{seed_NN}.txt"
 
         with open(results_file, "w") as results:
             results.write(f"Discrim. power for STS bkg from STS sig in band SR: {roc}\n")
             results.write(3*"\n")
-
+            
+        np.save(f"{results_dir}/combined_results_seedNN{seed_NN}", combined_results)
         print()
         print(5*"*")
         print()
@@ -264,7 +266,7 @@ for seed_NN in range(index_start, index_stop, 1):
         print(f"Evaluating full sup (seed {seed_NN} of {index_stop})...")
 
 
-        roc, full_sup_results = discriminate_datasets_weighted(results_dir, f"full_sup_{seed_NN}",true_sup_bkg[:,:n_features], true_sup_sig[:,:n_features], np.ones((true_sup_bkg.shape[0], 1)), np.ones((true_sup_sig.shape[0], 1)), STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = True, seed = seed_NN)
+        roc, full_sup_results = discriminate_for_scatter_kfold(results_dir, f"full_sup_{seed_NN}",true_sup_bkg[:,:n_features], true_sup_sig[:,:n_features], np.ones((true_sup_bkg.shape[0], 1)), np.ones((true_sup_sig.shape[0], 1)), STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = False, seed = seed_NN)
         results_file = f"{results_dir}/full_sup_{seed_NN}.txt"
 
         with open(results_file, "w") as results:
