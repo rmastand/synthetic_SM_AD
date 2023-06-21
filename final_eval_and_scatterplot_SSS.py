@@ -56,8 +56,8 @@ seed = 1
 n_features = 5
 
 
-index_start = 0
-index_stop = 20
+index_start = 20
+index_stop = 50
 
 eval_feta = True
 eval_cathode = True
@@ -253,7 +253,7 @@ for seed_NN in range(index_start, index_stop, 1):
             results.write(f"Discrim. power for STS bkg from STS sig in band SR: {roc}\n")
             results.write(3*"\n")
             
-        np.save(f"{results_dir}/combined_results_seedNN{seed_NN}", combined_results)
+        np.save(f"{results_dir}/combined_results_seedNN{seed_NN}_nsig{args.num_signal_to_inject}", combined_results)
         print()
         print(5*"*")
         print()
