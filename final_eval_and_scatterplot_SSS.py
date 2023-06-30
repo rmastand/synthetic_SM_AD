@@ -56,14 +56,15 @@ seed = 1
 n_features = 5
 
 
-index_start = 20
-index_stop = 50
+index_start = 0
+index_stop = 100
 
-eval_feta = True
-eval_cathode = True
-eval_curtains = True
-eval_salad = True
-eval_combined = True
+eval_feta = False
+eval_cathode = False
+eval_curtains = False
+eval_salad = False
+eval_combined = False
+eval_ideal_ad = True
 eval_full_sup = False
 
 
@@ -112,6 +113,7 @@ STS DATA
 
 STS_bkg_dataset = np.load(f"{scaled_data_dir}/STS_bkg_extra.npy") # David's extra samples
 STS_sig_dataset = np.load(f"{scaled_data_dir}/STS_sig.npy")
+ideal_ad_bkg = np.load(f"{scaled_data_dir}/ideal_ad_bkg.npy")
 
 dat_samples_train = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/data.npy")
 
@@ -256,6 +258,26 @@ for seed_NN in range(index_start, index_stop, 1):
         np.save(f"{results_dir}/combined_results_seedNN{seed_NN}_nsig{args.num_signal_to_inject}", combined_results)
         print()
         print(5*"*")
+        print()
+        
+        
+    if eval_ideal_ad:
+
+        np.random.seed(seed_NN)
+
+        print(f"Evaluating idealized AD (seed {seed_NN} of {index_stop})...")
+
+        roc, full_sup_results = discriminate_for_scatter_kfold(results_dir, f"ideal_ad_{seed_NN}",ideal_ad_bkg[:,:n_features], dat_samples_train[:,:n_features], np.ones((ideal_ad_bkg.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = False, seed = seed_NN)
+        results_file = f"{results_dir}/ideal_ad_{seed_NN}.txt"
+
+        with open(results_file, "w") as results:
+            results.write(f"Discrim. power for STS bkg from STS sig in band SR: {roc}\n")
+            results.write(3*"\n")
+
+        np.save(f"{results_dir}/ideal_ad_results_seedNN{seed_NN}", full_sup_results)
+
+        print()
+        print(20*"*")
         print()
 
 
