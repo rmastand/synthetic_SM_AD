@@ -18,7 +18,7 @@ def load_in_data(num_signal_to_inject, num_bkg, process, synth_ids, n_seed, scat
                 data = np.load(f"{scatterplot_dir}/nsig_inj{num_signal_to_inject}_seed1/{iid}_results_seedNN{seed_NN}_nsig{num_signal_to_inject}.npy")
             else:
                 data = np.load(f"{scatterplot_dir}/nsig_inj0_seed1/full_sup_results_seedNN{seed_NN}.npy")
-
+                
             # currently standardizing each random seed independently. May want to revisit!
             if process == "StandardScale":
                 data_stand = StandardScaler().fit_transform(data)

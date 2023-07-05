@@ -1,4 +1,6 @@
 import numpy as np
+from sklearn.metrics import roc_auc_score, roc_curve
+
 
 def get_sic_rejection(idd, seed, n, results_dir, num_bkg_events = -1):
     
@@ -29,6 +31,35 @@ def get_sic_rejection(idd, seed, n, results_dir, num_bkg_events = -1):
     else:
         maxsic = np.nanmax(sic)
     return tpr_nonzero, sic, rejection, maxsic
+
+
+def scores_into_summary(scores, truth, x_axis, num_bkg, rejection_for_sic):
+    # get the roc
+    fpr, tpr, _ = roc_curve(truth, scores)
+
+    # get sic and rej
+    fpr_nonzero_indices = np.where(fpr != 0)
+    fpr_nonzero = fpr[fpr_nonzero_indices]
+    tpr_nonzero = tpr[fpr_nonzero_indices]
+    rejection = 1.0 / fpr_nonzero #np.divide(1.0, fpr, out=np.zeros_like(fpr), where=fpr!=0)
+    sic = tpr_nonzero / np.sqrt(fpr_nonzero) #np.divide(tpr, np.sqrt(fpr), out=np.zeros_like(tpr), where=np.sqrt(fpr)!=0)
+
+    # calculate the maxsic
+    eps_bkg = 1.0/((0.4**2)*num_bkg)
+    fpr_cutoff_indices = np.where(fpr_nonzero > eps_bkg)
+    maxsic = np.nanmax(sic[fpr_cutoff_indices])
+
+    # calculate the sic at the desired rejection rejection_for_sic
+    for ind in range(len(rejection)):
+        if (rejection[ind] >= rejection_for_sic) and (rejection[ind+1] < rejection_for_sic):
+            sic_at_rejection = sic[ind]
+
+    # and interpolate
+    interp_sic = np.interp(x_axis, tpr_nonzero, sic)
+    interp_rej = np.interp(x_axis, tpr_nonzero, rejection)
+    
+    return interp_rej, interp_sic, maxsic, sic_at_rejection
+
 
 
 def get_mean_std(loc_list):
