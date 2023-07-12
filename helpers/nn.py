@@ -56,13 +56,11 @@ class NeuralNet(nn.Module):
         
         return output
     
-"""
 
-# Architecture from CATHODE paper
 
-class NeuralNet(nn.Module):
+class MulticlassNet(nn.Module):
     def __init__(self, input_shape):
-        super(NeuralNet, self).__init__()
+        super(MulticlassNet, self).__init__()
 
         # Designed to ensure that adjacent pixels are either all 0s or all active
         # with an input probability
@@ -71,24 +69,26 @@ class NeuralNet(nn.Module):
 
         # First fully connected layer
         self.fc1 = nn.Linear(input_shape, 64) # first size is output of flatten
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, 64)
-        self.fc4 = nn.Linear(64, 1)
+        # Second fully connected layer that outputs our labels
+        self.fc2 = nn.Linear(64, 32)
+
+        # output changed from 1 to 4 for multiclass test
+        self.fc3 = nn.Linear(32, 4)
 
         
     # x represents our data
     def forward(self, x):
 
         x = torch.flatten(x, 1)
+        # Pass data through fc1
         x = F.relu(self.fc1(x))
+        #x = self.dropout1(x)
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = self.fc4(x)
+        #x = self.dropout2(x)
+        x = self.fc3(x)
     
-        output = torch.sigmoid(x) # for BCE 
+        # Apply softmax to x, so NLLLoss can be used
+        output = F.log_softmax(x, dim=1)
+        #output = torch.sigmoid(x) # for BCE 
         
         return output
-    
-
-"""
-    

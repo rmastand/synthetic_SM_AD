@@ -9,6 +9,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 
 
 
+
 def discriminate_datasets_weighted(dir_to_save, idd, 
                                         train_samp_1, train_samp_2, 
                                         weights_samp_1, weights_samp_2,
@@ -397,4 +398,126 @@ def discriminate_for_scatter_kfold(results_dir, idd, train_samp_1, train_samp_2,
         auc = 1.0 - auc
     
     return auc, outputs
+
+
+
+"""
+multiclass helpers
+"""
+
+def find_accuracy(pred, label, individual=False):
+    overall = (np.argmax(pred, axis=-1) == label).astype(float) #.mean()
+    if individual:
+        cathode = (np.argmax(pred[label==0], axis=-1) == 0).astype(float)
+        curtains = (np.argmax(pred[label==1], axis=-1) == 1).astype(float)
+        feta = (np.argmax(pred[label==2], axis=-1) == 2).astype(float)
+        salad = (np.argmax(pred[label==3], axis=-1) == 3).astype(float)
+        return overall, (cathode, curtains, feta, salad)
+    else:
+        return overall
+
+
+def train_multiclass_model(model, dataloader, optimizer, criterion):
+    model.train()
+    train_loss = []
+    train_weights = []
+    for i, batch in enumerate(dataloader):
+        optimizer.zero_grad()
+            
+        batch_data = batch[0][:, :5]
+        batch_weight = batch[0][:, 6]
+        batch_labels = batch[0][:, -1].to(torch.long)
+            
+        loss = batch_weight*criterion(model(batch_data), batch_labels)
+        train_loss.append(loss.tolist())
+        train_weights.append(batch_weight.tolist())
+        
+        #loss = loss.sum()/batch_weight.sum()
+        loss = loss.mean()
+        
+        loss.backward()
+        optimizer.step()
+        #if i % 40 == 0:
+            #print(f"step {i:4d} / {len(dataloader)}; loss {loss.item():.4f}")
+    train_loss = np.array(train_loss).flatten()
+    train_weights = np.array(train_weights).flatten()
+    #return train_loss.sum()/train_weights.sum()
+    return train_loss.mean()
+
+@torch.no_grad()
+def evaluate(model, dataloader, criterion):
+    model.eval()
+    eval_loss = []
+    eval_weights = []
+    acc = []
+    acc_individual = {'cathode': [], 'curtains': [], 'feta': [], 'salad': []}
+    for batch in dataloader:            
+        batch_data = batch[0][:, :5]
+        batch_weight = batch[0][:, 6]
+        batch_labels = batch[0][:, -1].to(torch.long)
+        pred=model(batch_data)
+        loss = batch_weight*criterion(pred, batch_labels)
+        eval_loss.append(loss.tolist())
+        eval_weights.append(batch_weight.tolist())
+        local_acc, local_acc_individual = find_accuracy(np.exp(pred.cpu().numpy()), batch_labels.cpu().numpy(), individual=True)
+        acc.append(local_acc)
+        acc_individual['cathode'].append(local_acc_individual[0])
+        acc_individual['curtains'].append(local_acc_individual[1])
+        acc_individual['feta'].append(local_acc_individual[2])
+        acc_individual['salad'].append(local_acc_individual[3])
+    eval_loss = np.array(eval_loss).flatten()
+    eval_weights = np.array(eval_weights).flatten()
+    acc = np.array(acc).flatten()
+    for key in acc_individual:
+        acc_individual[key] = np.concatenate([*acc_individual[key]]).flatten()
+    #print(f"Evaluation loss {eval_loss.sum()/eval_weights.sum()}, accuracy {acc.mean()}, acc CATHODE: {acc_individual['cathode'].mean():.3f}, acc CURTAINS: {acc_individual['curtains'].mean():.3f}, acc FETA: {acc_individual['feta'].mean():.3f}, acc SALAD: {acc_individual['salad'].mean():.3f}")
+    #return eval_loss.sum()/eval_weights.sum(), acc
+    print(f"Evaluation loss {eval_loss.mean()}, accuracy {acc.mean()}, acc CATHODE: {acc_individual['cathode'].mean():.3f}, acc CURTAINS: {acc_individual['curtains'].mean():.3f}, acc FETA: {acc_individual['feta'].mean():.3f}, acc SALAD: {acc_individual['salad'].mean():.3f}")
+    return eval_loss.mean(), acc
+
+@torch.no_grad()
+def get_prediction(model, dataloader):
+    model.eval()
+    preds = []
+    weights = []
+    for batch in dataloader:            
+        batch_data = batch[0][:, :5]
+        weights.append(np.array(batch[0][:, 6].tolist()))
+        batch_labels = batch[0][:, -1]
+        batch_preds = np.array(model(batch_data).tolist())
+        
+        preds.append(np.concatenate((batch_preds, batch_labels.reshape(-1, 1).tolist()), axis=1))
+    weights = np.concatenate([*weights])
+    preds = np.concatenate([*preds])
+    preds[:, :4] = np.exp(preds[:, :4])
+    return preds, weights
+
+def save_weights(model, appendix=None):
+    """ saves the model to file """
+    if appendix is not None:
+        file_name = f'multiclass_weights_{appendix}.pt'
+    else:
+        file_name = f'multiclass_weights.pt'
+    torch.save({'model_state_dict': model.state_dict()}, file_name)
+    print("Model saved")
+
+def load_weights(model, device, appendix=None):
+    """ loads the model from file """
+    if appendix is not None:
+        file_name = f'multiclass_weights_{appendix}.pt'
+    else:
+        file_name = f'multiclass_weights.pt'
+    checkpoint = torch.load(file_name, map_location=device)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.to(device)
+    model.eval()
+    print(f"Model {file_name} loaded")
+    
+def log_posterior(preds, weights=None):
+    """ log posterior scores = sum_{x in geant} log p(C|x) where C = CATHODE, CURTAINS, FETA, SALAD """
+    if weights is None:
+        return np.log(preds).sum(axis=0)
+    else:
+        return (weights*np.log(preds)).sum(axis=0)
+
 
