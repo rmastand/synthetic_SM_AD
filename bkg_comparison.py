@@ -35,7 +35,7 @@ print( "Using device: " + str( device ), flush=True)
 
 
 # loading and understanding the data
-data_path = '/global/home/users/rrmastandrea/scaled_data_wide/'
+data_path = '/global/home/users/rrmastandrea/scaled_data_wide_07_11/'
 
 cathode_data = np.load(f"{data_path}nsig_injected_0/cathode.npy")
 curtains_data = np.load(f"{data_path}nsig_injected_0/curtains.npy")
@@ -194,7 +194,7 @@ if summarize_results:
     weights_salad_list = []
     preds_truth_list = []
 
-    for run_num in range(13):
+    for run_num in range(100):
 
         print(f"Run number {run_num}")
         name_appendix = f"multiclass_models/run{run_num}_balanced_original_5_classwgt_1.021"
@@ -212,6 +212,7 @@ if summarize_results:
         weights_salad_list.append(weights_models[preds_models[:, -1] == 3.].reshape(-1,1))
         preds_truth_list.append(preds_truth[:, :4])
 
+        
         print(output_str.format("CATHODE samples", 
                                 log_posterior(preds_cathode_list[-1]), 
                                 np.argmax(log_posterior(preds_cathode_list[-1]))))
@@ -236,6 +237,7 @@ if summarize_results:
                                 log_posterior(preds_truth_list[-1]), 
                                 np.argmax(log_posterior(preds_truth_list[-1]))))
         log_posterior_dict['TRUTH'].append(log_posterior(preds_truth_list[-1])/len(preds_truth_list[-1]))
+        
 
 
     preds_cathode_list = np.array(preds_cathode_list)
@@ -245,6 +247,7 @@ if summarize_results:
     weights_salad_list = np.array(weights_salad_list)
     preds_truth_list = np.array(preds_truth_list)
 
+    
     for key in log_posterior_dict:
         log_posterior_dict[key] = np.array(log_posterior_dict[key])
 
@@ -268,29 +271,38 @@ if summarize_results:
     print("Mean and std of individual runs: ")
     """
 
-    to_plot_central = []
-    to_plot_err = []
+    to_plot_median = []
+    to_plot_err_lower = []
+    to_plot_err_higher = []
 
     for method in ['CATHODE', 'CURTAINS', 'FETA', 'SALAD', 'TRUTH']:
         #print(f"Based on {len(log_posterior_dict[method])} runs.")
 
-        cen=log_posterior_dict[method].mean(0)
-        err=log_posterior_dict[method].std(0)
-        """
-        print(output_str_2.format(f"{method} samples", 
-                                  cen,
-                                  err,
-                                  np.argmax(log_posterior_dict[method].mean(0))))
-        """
-        to_plot_central.append(cen)
-        to_plot_err.append(err)
+        #cen = log_posterior_dict[method].mean(0)
+        #err = log_posterior_dict[method].std(0)
+        median= np.median(log_posterior_dict[method], axis = 0) 
+        percentile_16= np.percentile(log_posterior_dict[method],16, axis = 0) 
+        percentile_84= np.percentile(log_posterior_dict[method],84, axis = 0) 
 
-    to_plot_central = np.array(to_plot_central).flatten()
-    to_plot_err = np.array(to_plot_err).flatten()
+        #print(output_str_2.format(f"{method} samples", 
+        #                          cen,
+         #                         err,
+        #                          np.argmax(log_posterior_dict[method].mean(0))))
+  
+        to_plot_median.append(median)
+        to_plot_err_lower.append(percentile_16)
+        to_plot_err_higher.append(percentile_84)
 
-    with open('log_posterior_mod.npy', 'wb') as f:
-        np.save(f, to_plot_central)
-        np.save(f, to_plot_err)
+    to_plot_median = np.array(to_plot_median).flatten()
+    to_plot_err_lower = np.array(to_plot_err_lower).flatten()
+    to_plot_err_higher = np.array(to_plot_err_higher).flatten()
+
+    with open('log_posterior_med.npy', 'wb') as f:
+        np.save(f, to_plot_median)
+    with open('log_posterior_err_lower.npy', 'wb') as f:
+        np.save(f, to_plot_err_lower)
+    with open('log_posterior_err_higher.npy', 'wb') as f:
+        np.save(f, to_plot_err_higher)
         
     print("Done!")
 
