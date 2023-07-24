@@ -10,7 +10,7 @@ For questions/comments about the code contact: rmastand@berkeley.edu
 
 ### Testing the synthetic samples in anomaly detection tasks
 
-Run the script ```final_eval_and_scatterplot_SSS.ipynb```. This will train a 5-fold binary classifier to discriminate the synthetic samples from a set ``data" (i.e. LHCO olympics background and signal). This script requires a dataset* of synthetic Standard Model background samples.
+Run the script ```final_eval_and_scatterplot_SSS.ipynb```. This will train a 5-fold binary classifier to discriminate the synthetic samples from a set ``data" (i.e. LHCO olympics background and signal). This script requires a dataset of synthetic Standard Model background samples.
 
 Once the above script has been run, the output can be passed through the following notebooks:
 
