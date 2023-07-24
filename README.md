@@ -1,6 +1,6 @@
 # Comparing and contrastic synthetic Standard Model background samples
 
-This is the companion repository to the paper "The Interplay of Machine Learning--based Resonant Anomaly Detection Methods at [https://arxiv.org/abs/2212.11285](https://arxiv.org/abs/2307.11157) (authors:Tobias Golling, Gregor Kasieczka, Claudius Krause, Radha Mastandrea, Benjamin Nachman, John Andrew Raine, Debajyoti Sengupta, David Shih, Manuel Sommerhalder). 
+This is the companion repository to the paper "The Interplay of Machine Learning--based Resonant Anomaly Detection Methods", at [https://arxiv.org/abs/2212.11285](https://arxiv.org/abs/2307.11157) (authors:Tobias Golling, Gregor Kasieczka, Claudius Krause, Radha Mastandrea, Benjamin Nachman, John Andrew Raine, Debajyoti Sengupta, David Shih, Manuel Sommerhalder). 
 
 All plots in the paper can be remade using these scripts and a dataset (to be released shortly) of synthetic Standard Model background samples from the [SALAD](https://github.com/bnachman/DCTRHunting), [CATHODE](https://github.com/HEPML-AnomalyDetection/CATHODE), CURTAINs, and [FETA](https://github.com/rmastand/FETA) methods.
 
