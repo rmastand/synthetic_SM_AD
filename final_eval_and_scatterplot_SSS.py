@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3.6
 # coding: utf-8
 
 import matplotlib.pyplot as plt
@@ -19,7 +19,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--num_signal_to_inject", help = "num signal to inject")
 parser.add_argument("-c", "--cuda_slot", help = "CUDA slot")
 
- 
 # Read arguments from command line
 args = parser.parse_args()
 
@@ -52,27 +51,28 @@ RUN PARAMETERS
 """
 """
 
-seed = 1
+gen_seed = 2
 n_features = 5
 
 
-index_start = 0
+index_start = 75
 index_stop = 100
 
 eval_feta = False
 eval_cathode = False
 eval_curtains = False
 eval_salad = False
+eval_random = True # Corresponds to a random classifier (for the AUC analysis)
 eval_combined = False
-eval_ideal_ad = True
+eval_ideal_ad = False
 eval_full_sup = False
 
 
-results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_wide/nsig_inj{args.num_signal_to_inject}_seed{seed}"
+results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_wide_seed_{gen_seed}/nsig_inj{args.num_signal_to_inject}_seed{gen_seed}"
 
 os.makedirs(results_dir, exist_ok=True)
 
-scaled_data_dir = "/global/home/users/rrmastandrea/scaled_data_wide/"
+scaled_data_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/scaled_data_wide_seed_{gen_seed}/"
 
 # parameters for combined samples
 target_total_events = 1000000
@@ -113,7 +113,7 @@ STS DATA
 
 STS_bkg_dataset = np.load(f"{scaled_data_dir}/STS_bkg_extra.npy") # David's extra samples
 STS_sig_dataset = np.load(f"{scaled_data_dir}/STS_sig.npy")
-ideal_ad_bkg = np.load(f"{scaled_data_dir}/ideal_ad_bkg.npy")
+#ideal_ad_bkg = np.load(f"{scaled_data_dir}/ideal_ad_bkg.npy")
 
 dat_samples_train = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/data.npy")
 
@@ -222,6 +222,27 @@ for seed_NN in range(index_start, index_stop, 1):
             results.write(3*"\n")
             
         np.save(f"{results_dir}/salad_results_seedNN{seed_NN}_nsig{args.num_signal_to_inject}", salad_results)
+
+        print()
+        print(5*"*")
+        print()
+        
+        
+    if eval_random:
+        np.random.seed(seed_NN)
+        
+        shuffled_dat_samples_train = np.random.permutation(dat_samples_train)
+
+        print(f"Evaluating random with {args.num_signal_to_inject} events (seed {seed_NN} of {index_stop})...")
+        roc, random_results = discriminate_for_scatter_kfold(results_dir, f"random_{seed_NN}", shuffled_dat_samples_train[:,:n_features], dat_samples_train[:,:n_features], np.ones((shuffled_dat_samples_train.shape[0], 1)), blank_weights_data, STS_bkg_dataset[:,:n_features], STS_sig_dataset[:,:n_features], n_features, epochs_NN, batch_size_NN, lr_NN, patience_NN, device, visualize = False, seed = seed_NN)
+        
+        results_file = f"{results_dir}/random_{seed_NN}.txt"
+
+        with open(results_file, "w") as results:
+            results.write(f"Discrim. power for STS bkg from STS sig in band SR: {roc}\n")
+            results.write(3*"\n")
+            
+        np.save(f"{results_dir}/random_results_seedNN{seed_NN}_nsig{args.num_signal_to_inject}", random_results)
 
         print()
         print(5*"*")
