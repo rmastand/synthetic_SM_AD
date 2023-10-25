@@ -51,7 +51,7 @@ RUN PARAMETERS
 """
 """
 
-gen_seed = 2
+gen_seed = 1
 n_features = 5
 
 
@@ -62,8 +62,8 @@ eval_feta = False
 eval_cathode = False
 eval_curtains = False
 eval_salad = False
-eval_random = True # Corresponds to a random classifier (for the AUC analysis)
-eval_combined = False
+eval_random = False # Corresponds to a random classifier (for the AUC analysis)
+eval_combined = True
 eval_ideal_ad = False
 eval_full_sup = False
 
@@ -72,7 +72,7 @@ results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_wide_see
 
 os.makedirs(results_dir, exist_ok=True)
 
-scaled_data_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/scaled_data_wide_seed_{gen_seed}/"
+scaled_data_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/scaled_data_wide_seed_2/"
 
 # parameters for combined samples
 target_total_events = 1000000
@@ -261,7 +261,7 @@ for seed_NN in range(index_start, index_stop, 1):
         salad_selected, salad_weights = select_n_events(salad_samples, target_total_events, num_synth_events, weights = base_salad_weights)
 
         # concatenate 
-        # shuffling *should* happen int the dataloader
+        # shuffling *should* happen in the dataloader
         synth_samples = np.concatenate((feta_selected, cathode_selected, curtains_selected, salad_selected))
         synth_weights = np.concatenate((feta_weights, cathode_weights, curtains_weights, salad_weights))
     
