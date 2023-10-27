@@ -51,28 +51,33 @@ RUN PARAMETERS
 """
 """
 
-gen_seed = 1
+gen_seed = 3
 n_features = 5
+project_id = "wide"
 
 
-index_start = 75
+index_start = 60
 index_stop = 100
 
-eval_feta = False
-eval_cathode = False
-eval_curtains = False
-eval_salad = False
+eval_feta = True
+eval_cathode = True
+eval_curtains = True
+eval_salad = True
 eval_random = False # Corresponds to a random classifier (for the AUC analysis)
-eval_combined = True
+eval_combined = False
 eval_ideal_ad = False
 eval_full_sup = False
 
 
-results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_wide_seed_{gen_seed}/nsig_inj{args.num_signal_to_inject}_seed{gen_seed}"
+
+results_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/NF_results_{project_id}_seed_{gen_seed}/nsig_inj{args.num_signal_to_inject}_seed{gen_seed}"
+
 
 os.makedirs(results_dir, exist_ok=True)
 
-scaled_data_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/scaled_data_wide_seed_2/"
+scaled_data_dir = f"/global/ml4hep/spss/rrmastandrea/synth_SM_AD/scaled_data_{project_id}_seed_{gen_seed}/"
+#scaled_data_dir = f"/global/home/users/rrmastandrea/scaled_data_{project_id}_seed_{gen_seed}/"
+
 
 # parameters for combined samples
 target_total_events = 1000000
@@ -134,15 +139,15 @@ curtains_samples = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to
 salad_samples = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/salad.npy")
 base_salad_weights = np.load(f"{scaled_data_dir}/nsig_injected_{args.num_signal_to_inject}/salad_weights.npy").reshape(-1, 1)
 
-num_synth_events = feta_samples.shape[0] + cathode_samples.shape[0] + curtains_samples.shape[0] + salad_samples.shape[0] 
+#num_synth_events = feta_samples.shape[0] + cathode_samples.shape[0] + curtains_samples.shape[0] + salad_samples.shape[0] 
 
 blank_weights_data = np.ones((dat_samples_train.shape[0], 1))
 
 
 # for full sup
-path_to_minmax = "/global/home/users/rrmastandrea/FETA/LHCO_STS_wide/data/col_minmax.npy"
+path_to_minmax = f"/global/home/users/rrmastandrea/FETA/LHCO_STS_{project_id}/data/col_minmax.npy"
 col_minmax = np.load(path_to_minmax)
-true_samples_dir = f"/global/home/users/rrmastandrea/FETA/LHCO_STS_wide/data/"
+true_samples_dir = f"/global/home/users/rrmastandrea/FETA/LHCO_STS_{project_id}/data/"
 
 true_sup_bkg = np.load(os.path.join(true_samples_dir, f"true_sup_bkg.npy"))
 true_sup_sig = np.load(os.path.join(true_samples_dir, f"true_sup_sig.npy"))
